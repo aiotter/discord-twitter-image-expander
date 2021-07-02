@@ -14,17 +14,28 @@ import {
 } from "https://deno.land/x/discordeno@11.2.0/mod.ts";
 
 const twitterUrlRegex = new RegExp(
-  "https?://twitter.com/[^/\\s]+/status/([0-9]+)",
+  "https?://twitter.com/([^/\\s]+)/status/([0-9]+)",
 );
 
 class CustomId {
-  twitterStatusId?: string;
-  discordMessageId?: string;
-  constructor(str?: string) {
-    if (str) [this.twitterStatusId, this.discordMessageId] = str.split("/");
+  twitterUserName: string;
+  twitterStatusId: string;
+  discordMessageId: string;
+  constructor(
+    twitterUserName: string,
+    twitterStatusId: string,
+    discordMessageId: string,
+  ) {
+    this.twitterUserName = twitterUserName;
+    this.twitterStatusId = twitterStatusId;
+    this.discordMessageId = discordMessageId;
   }
   toString() {
-    return `${this.twitterStatusId}/${this.discordMessageId}`;
+    return `${this.twitterUserName}/${this.twitterStatusId}/${this.discordMessageId}`;
+  }
+  static fromString(str: string) {
+    const [twitterUserName, twitterStatusId, discordMessageId] = str.split("/");
+    return new this(twitterUserName, twitterStatusId, discordMessageId);
   }
 }
 
@@ -36,31 +47,38 @@ function getImageUrlMap(message: DiscordenoMessage) {
   });
   const imageUrls: { [key: string]: string[] } = {};
   for (const twitterUrl of twitterUrls) {
-    const statusId = twitterUrl.match(twitterUrlRegex)?.[1] as string;
+    const match = twitterUrl.match(twitterUrlRegex) as RegExpMatchArray;
+    const [_statusUrl, userId, statusId] = match;
     const imageUrlsForStatusId = message.embeds
       .filter((e) => e?.url?.startsWith(twitterUrl) && e?.image)
       .map((e) => e.image?.url) as string[];
-    imageUrls[statusId] = imageUrlsForStatusId;
+    imageUrls[`${userId}/${statusId}`] = imageUrlsForStatusId;
   }
   return imageUrls;
 }
 
 async function replyToTwitterWithMultipleImages(message: DiscordenoMessage) {
   const imageUrlMap = getImageUrlMap(message);
-  const customId = new CustomId();
-  for (const [statusId, imageUrls] of Object.entries(imageUrlMap)) {
-    customId.twitterStatusId = statusId;
-    customId.discordMessageId = message.id.toString();
+  for (const [tweetId, imageUrls] of Object.entries(imageUrlMap)) {
+    const [twitterUserName, twitterStatusId] = tweetId.split("/");
+    const customId = new CustomId(twitterUserName, twitterStatusId, message.id.toString());
     if (imageUrls.length > 1) {
-      const button: ButtonComponent = {
+      const showImagesButton: ButtonComponent = {
         type: DiscordMessageComponentTypes.Button,
         label: `Show all the images (${imageUrls.length})`,
         style: DiscordButtonStyles.Primary,
         customId: customId.toString(),
       };
+      const openTwitterButton: ButtonComponent = {
+        type: DiscordMessageComponentTypes.Button,
+        label: "Open App",
+        style: DiscordButtonStyles.Link,
+        url:
+          `https://twitter.com/${customId.twitterUserName}/status/${customId.twitterStatusId}`,
+      };
       const row: ActionRow = {
         type: DiscordMessageComponentTypes.ActionRow,
-        components: [button],
+        components: [showImagesButton, openTwitterButton],
       };
       let sendingMessage: CreateMessage;
       if (Object.keys(imageUrlMap).length > 1) {
@@ -102,15 +120,16 @@ startBot({
 
     async interactionCreate(interaction) {
       if (interaction.type !== DiscordInteractionTypes.MessageComponent) return;
-      const customId = new CustomId(
-        interaction.message?.components?.[0]?.components?.[0].customId,
-      );
+      const rawCustomId =
+        interaction.message?.components?.[0]?.components?.[0].customId;
+      if (!rawCustomId) return;
+      const customId = CustomId.fromString(rawCustomId);
       const message = await helpers.getMessage(
         BigInt(interaction.message?.channelId as string),
         BigInt(customId.discordMessageId as string),
       );
       const imageUrlMap = getImageUrlMap(message);
-      const imageUrls = imageUrlMap[customId.twitterStatusId as string];
+      const imageUrls = imageUrlMap[`${customId.twitterUserName}/${customId.twitterStatusId}`];
       helpers.sendInteractionResponse(interaction.id, interaction.token, {
         type: DiscordInteractionResponseTypes.ChannelMessageWithSource,
         private: true,
