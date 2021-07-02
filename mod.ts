@@ -13,13 +13,14 @@ import {
   startBot,
 } from "https://deno.land/x/discordeno@11.2.0/mod.ts";
 
-enum twitterImageSize {
-  Thumbnail = "thumb",
-  Small = "small",
-  Medium = "medium",
-  Large = "large",
-  Original = "orig",
-}
+const TwitterImageSize = {
+  Thumbnail: "thumb",
+  Small: "small",
+  Medium: "medium",
+  Large: "large",
+  Original: "orig",
+} as const;
+type TwitterImageSize = typeof TwitterImageSize[keyof typeof TwitterImageSize]
 
 const twitterUrlRegex = new RegExp(
   "https?://twitter.com/([^/\\s]+)/status/([0-9]+)",
@@ -29,12 +30,12 @@ class ButtonCustomId {
   twitterUserName: string;
   twitterStatusId: string;
   discordMessageId: string;
-  imageSize: twitterImageSize;
+  imageSize: TwitterImageSize;
   constructor(
     twitterUserName: string,
     twitterStatusId: string,
     discordMessageId: string,
-    imageSize: twitterImageSize,
+    imageSize: TwitterImageSize,
   ) {
     this.twitterUserName = twitterUserName;
     this.twitterStatusId = twitterStatusId;
@@ -59,14 +60,14 @@ class ButtonCustomId {
       twitterUserName,
       twitterStatusId,
       discordMessageId,
-      imageSize as twitterImageSize,
+      imageSize as TwitterImageSize,
     );
   }
 }
 
 function getImageUrlMap(
   message: DiscordenoMessage,
-  size: twitterImageSize = twitterImageSize.Large,
+  size: TwitterImageSize = TwitterImageSize.Large,
 ) {
   const twitterUrls = new Set<string>();
   message.embeds.forEach((embed) => {
@@ -94,7 +95,7 @@ async function replyToTwitterWithMultipleImages(message: DiscordenoMessage) {
       twitterUserName,
       twitterStatusId,
       message.id.toString(),
-      twitterImageSize.Large,
+      TwitterImageSize.Large,
     );
     const showImagesButton: ButtonComponent = {
       type: DiscordMessageComponentTypes.Button,
@@ -107,7 +108,7 @@ async function replyToTwitterWithMultipleImages(message: DiscordenoMessage) {
       twitterUserName,
       twitterStatusId,
       message.id.toString(),
-      twitterImageSize.Original,
+      TwitterImageSize.Original,
     );
     const fetchOriginalImagesButton: ButtonComponent = {
       type: DiscordMessageComponentTypes.Button,
