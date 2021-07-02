@@ -28,7 +28,7 @@ class CustomId {
   }
 }
 
-function getImageUrls(message: DiscordenoMessage) {
+function getImageUrlMap(message: DiscordenoMessage) {
   const twitterUrls = new Set<string>();
   message.embeds.forEach((embed) => {
     const twitterUrl = embed?.url?.match(twitterUrlRegex);
@@ -46,7 +46,7 @@ function getImageUrls(message: DiscordenoMessage) {
 }
 
 async function replyToTwitterWithMultipleImages(message: DiscordenoMessage) {
-  const imageUrlMap = getImageUrls(message);
+  const imageUrlMap = getImageUrlMap(message);
   const customId = new CustomId();
   for (const [statusId, imageUrls] of Object.entries(imageUrlMap)) {
     customId.twitterStatusId = statusId;
@@ -109,7 +109,7 @@ startBot({
         BigInt(interaction.message?.channelId as string),
         BigInt(customId.discordMessageId as string),
       );
-      const imageUrlMap = getImageUrls(message);
+      const imageUrlMap = getImageUrlMap(message);
       const imageUrls = imageUrlMap[customId.twitterStatusId as string];
       helpers.sendInteractionResponse(interaction.id, interaction.token, {
         type: DiscordInteractionResponseTypes.ChannelMessageWithSource,
