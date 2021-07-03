@@ -20,11 +20,16 @@ const TwitterImageSize = {
   Large: "large",
   Original: "orig",
 } as const;
-type TwitterImageSize = typeof TwitterImageSize[keyof typeof TwitterImageSize]
+type TwitterImageSize = typeof TwitterImageSize[keyof typeof TwitterImageSize];
 
 const twitterUrlRegex = new RegExp(
   "https?://twitter.com/([^/\\s]+)/status/([0-9]+)",
 );
+
+type ImageUrl = string;
+interface ImageUrlMap {
+  [TweetId: string]: ImageUrl[];
+}
 
 class ButtonCustomId {
   twitterUserName: string;
@@ -68,7 +73,7 @@ class ButtonCustomId {
 function getImageUrlMap(
   message: DiscordenoMessage,
   size: TwitterImageSize = TwitterImageSize.Large,
-) {
+): ImageUrlMap {
   const twitterUrls = new Set<string>();
   message.embeds.forEach((embed) => {
     const twitterUrl = embed?.url?.match(twitterUrlRegex);
