@@ -184,12 +184,14 @@ startBot({
         BigInt(customId.discordMessageId as string),
       );
       const imageUrlMap = getImageUrlMap(message, customId.imageSize);
+      const mention = `<@${interaction.member?.user.id ??
+        interaction.user?.id}>`;
       const imageUrls =
         imageUrlMap[`${customId.twitterUserName}/${customId.twitterStatusId}`];
       helpers.sendInteractionResponse(interaction.id, interaction.token, {
         type: DiscordInteractionResponseTypes.ChannelMessageWithSource,
         private: true,
-        data: { content: imageUrls.join("\n") },
+        data: { content: mention + "\n" + imageUrls.join("\n") },
       });
     },
 
