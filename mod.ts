@@ -12,6 +12,7 @@ import {
   Message,
   startBot,
 } from "https://deno.land/x/discordeno@11.2.0/mod.ts";
+import { dirname } from "https://deno.land/std@0.100.0/path/mod.ts";
 
 const TwitterImageSize = {
   Thumbnail: "thumb",
@@ -21,6 +22,12 @@ const TwitterImageSize = {
   Original: "orig",
 } as const;
 type TwitterImageSize = typeof TwitterImageSize[keyof typeof TwitterImageSize];
+
+const spacerBlob = new Blob([
+  await Deno.readFile(
+    dirname(new URL(import.meta.url).pathname) + "/spacer.png",
+  ),
+], { type: "image/png" });
 
 const twitterUrlRegex = new RegExp(
   "https?://twitter.com/([^/\\s]+)/status/([0-9]+)",
@@ -92,7 +99,7 @@ function getImageUrlMap(
   return imageUrls;
 }
 
-async function replyToTwitterWithMultipleImages(message: DiscordenoMessage) {
+function replyToTwitterWithMultipleImages(message: DiscordenoMessage) {
   const imageUrlMap = getImageUrlMap(message);
   for (const [tweetId, imageUrls] of Object.entries(imageUrlMap)) {
     const [twitterUserName, twitterStatusId] = tweetId.split("/");
@@ -148,9 +155,7 @@ async function replyToTwitterWithMultipleImages(message: DiscordenoMessage) {
     } else {
       sendingMessage = {
         file: {
-          blob: new Blob([await Deno.readFile("spacer.png")], {
-            type: "image/png",
-          }),
+          blob: spacerBlob,
           name: "spacer.png",
         },
         components: [row],
