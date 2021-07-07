@@ -102,6 +102,7 @@ function getImageUrlMap(
 function replyToTwitterWithMultipleImages(message: DiscordenoMessage) {
   const imageUrlMap = getImageUrlMap(message);
   for (const [tweetId, imageUrls] of Object.entries(imageUrlMap)) {
+    if (imageUrls.length < 2) continue;
     const [twitterUserName, twitterStatusId] = tweetId.split("/");
     const showImagesButtonCustomId = new ButtonCustomId(
       twitterUserName,
@@ -116,32 +117,10 @@ function replyToTwitterWithMultipleImages(message: DiscordenoMessage) {
       customId: showImagesButtonCustomId.toString(),
     };
 
-    const fetchOriginalImagesButtonCustomId = new ButtonCustomId(
-      twitterUserName,
-      twitterStatusId,
-      message.id.toString(),
-      TwitterImageSize.Original,
-    );
-    const fetchOriginalImagesButton: ButtonComponent = {
-      type: DiscordMessageComponentTypes.Button,
-      label: "Fetch original size",
-      style: DiscordButtonStyles.Secondary,
-      customId: fetchOriginalImagesButtonCustomId.toString(),
-    };
-
-    const openTwitterButton: ButtonComponent = {
-      type: DiscordMessageComponentTypes.Button,
-      label: "Open App",
-      style: DiscordButtonStyles.Link,
-      url: showImagesButtonCustomId.toStatusUrl(),
-    };
-
     const row: ActionRow = {
       type: DiscordMessageComponentTypes.ActionRow,
       components: [
         showImagesButton,
-        fetchOriginalImagesButton,
-        openTwitterButton,
       ],
     };
     let sendingMessage: CreateMessage;
